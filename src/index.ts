@@ -7,6 +7,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { HttpServerTransport } from '@modelcontextprotocol/sdk/server/http.js';
 import dotenv from 'dotenv';
 
 import { AuthManager } from './auth/AuthManager';
@@ -45,12 +46,21 @@ registerTools(server, authManager);
 
 // Start the server
 async function main(): Promise<void> {
-  const transport = new StdioServerTransport();
+  const mode = process.env.MCP_MODE || 'http';
+  let transport;
+
+  if (mode === 'stdio') {
+    transport = new StdioServerTransport();
+  } else {
+    const port = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 3000;
+    transport = new HttpServerTransport({ port });
+  }
+
   await server.connect(transport);
 
   logger.info('Vikunja MCP server started');
   logger.debug('Configuration loaded', {
-    mode: process.env.MCP_MODE,
+    mode,
     debug: process.env.DEBUG,
     hasAuth: !!process.env.VIKUNJA_URL && !!process.env.VIKUNJA_API_TOKEN,
   });
